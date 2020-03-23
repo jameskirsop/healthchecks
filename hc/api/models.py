@@ -184,6 +184,20 @@ class Check(models.Model):
 
         return "up"
 
+    @property
+    def status_int(self, now=None, with_started=True):
+        """ Returns an integer representation of the status in a linear scale. """
+
+        status_ints = {
+            "down": 0,
+            "grace": 1,
+            "started": 2,
+            "paused": 3,
+            "new": 3,
+            "up": 4,
+        }
+        return status_ints.get(self.get_status())
+
     def assign_all_channels(self):
         channels = Channel.objects.filter(project=self.project)
         self.channel_set.set(channels)
@@ -214,6 +228,7 @@ class Check(models.Model):
             "grace": int(self.grace.total_seconds()),
             "n_pings": self.n_pings,
             "status": self.get_status(),
+            "status_int": self.status_int,
             "last_ping": isostring(self.last_ping),
             "next_ping": isostring(self.get_grace_start()),
         }
