@@ -469,6 +469,15 @@
         </li>
         {% endif %}
 
+        {% if enable_connectwisemanage %}
+        <li>
+            <img src="{% static 'img/integrations/connectwisemanage.png' %}" alt="ConnectWise Manage icon" class="icon">
+            <h2>Connectwise Manage</h2>
+            <p>ITSM Ticketing System.</p>
+            <a href="{% url 'hc-add-connectwisemanage' project.code %}" class="btn btn-primary">Add Integration</a>
+        </li>
+        {% endif %}
+
         <li class="link-to-github">
             <img src="{% static 'img/integrations/missing.png' %}"
                  class="icon" alt="Suggest New Integration" />

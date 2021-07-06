@@ -1,3 +1,4 @@
+import base64
 import os
 
 from django.conf import settings
@@ -742,3 +743,39 @@ class Signal(Transport):
                 return "Recipient not found"
 
             return "signal-cli call failed"
+
+class ConnectWiseManage(HttpTransport):
+    @classmethod
+    def get_error(cls, response):
+        try:
+            return response.json()
+        except ValueError:
+            pass
+
+    def notify(self,check):
+        if not settings.CONNECTWISEMANAGE_ENABLED:
+            return "ConnectWise Manage ticketing is not enabled"
+
+        if not settings.CONNECTWISEMANAGE_CLIENTID:
+            return "ConnectWise Manage Developer ClientID is not set"
+        
+        headers={
+            'Authorization':'Basic '+base64.b64encode(
+                bytes(f"{self.channel.connectwisemanage_company}+{self.channel.connectwisemanage_public_key}:{self.channel.connectwisemanage_private_key}",encoding="utf-8")
+                ).decode("utf-8"),
+            'clientId':settings.CONNECTWISEMANAGE_CLIENTID,
+            'content-type':'application/json'
+        }
+
+        if check.status == "up":
+            return self.patch()
+        
+        url = f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets"
+        payload = {
+            'board':{'id':self.channel.connectwisemanage_board},
+            'company':{'id':self.channel.connectwisemanage_ticket_company},
+            'status':{'id':self.channel.connectwisemanage_status_down},
+            'summary':tmpl("connectwisemanage_summary.html", check=check),
+            'initialDescription':tmpl("connectwisemanage_description.html", check=check),
+            }
+        return self.post(url,json=payload,headers=headers)

@@ -290,3 +290,19 @@ class AddTrelloForm(forms.Form):
 
     def get_value(self):
         return json.dumps(dict(self.cleaned_data), sort_keys=True)
+
+class AddConnectWiseManageFormBase(forms.Form):
+    url = forms.URLField()
+    company = forms.CharField(max_length=80)
+    public_key = forms.CharField(max_length=60)
+    private_key = forms.CharField(max_length=60)
+
+    def get_value(self):
+        return json.dumps(dict(self.cleaned_data), sort_keys=True)
+
+class AddConnectWiseManageFormComplete(AddConnectWiseManageFormBase):
+    board = forms.CharField(max_length=60)
+    ticket_company = forms.IntegerField(required=False)
+    status_down = forms.CharField(max_length=60,required=False)
+    status_up = forms.CharField(max_length=60,required=False)
+

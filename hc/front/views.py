@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime, timedelta as td
 import email
 import json
@@ -5,6 +6,9 @@ import os
 import re
 from secrets import token_urlsafe
 from urllib.parse import urlencode
+from django.http.response import HttpResponseServerError
+
+from requests.api import head
 
 from cron_descriptor import ExpressionDescriptor
 from croniter import croniter
@@ -814,6 +818,7 @@ def channels(request, code):
         "channels": channels,
         "enable_apprise": settings.APPRISE_ENABLED is True,
         "enable_call": settings.TWILIO_AUTH is not None,
+        "enable_connectwisemanage": settings.CONNECTWISEMANAGE_ENABLED is not None,
         "enable_discord": settings.DISCORD_CLIENT_ID is not None,
         "enable_linenotify": settings.LINENOTIFY_CLIENT_ID is not None,
         "enable_matrix": settings.MATRIX_ACCESS_TOKEN is not None,
@@ -2016,5 +2021,103 @@ def add_linenotify_complete(request):
 
     return redirect("hc-channels", project.code)
 
+@require_setting("CONNECTWISEMANAGE_CLIENTID")
+@login_required
+def add_connectwisemanage(request, code):
+    project = _get_rw_project_for_user(request, code)
 
-# Forks: add custom views after this line
+    if request.method == "POST":
+        form = forms.AddConnectWiseManageFormComplete(request.POST)
+        if form.is_valid():
+            channel = Channel(project=project, kind="connectwisemanage")
+            channel.value = json.dumps(form.cleaned_data)
+            # print(channel.value)
+            channel.save()
+
+            # channel.assign_all_checks()
+            return redirect("hc-channels", project.code)
+    else:
+        form = forms.AddConnectWiseManageFormComplete()
+
+    ctx = {"page": "channels", "project": project, "form": form}
+    return render(request, "integrations/add_connectwisemanage.html", ctx)
+
+
+@login_required
+@require_POST
+@csrf_exempt
+def add_connectwisemanage_board(request, code):
+    form = forms.AddConnectWiseManageFormBase(request.POST)
+    if form.is_valid():
+        try:
+            boards = requests.get(f"{form.cleaned_data['url']}/v4_6_release/apis/3.0/service/boards",
+                headers={
+                    'Authorization':'Basic '+base64.b64encode(
+                        bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
+                        ).decode("utf-8"),
+                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,
+                    'content-type':'application/json'
+                }
+            )
+            boards.raise_for_status()
+            companies = requests.get(f"{form.cleaned_data['url']}/v4_6_release/apis/3.0/company/companies?pageSize=1000",
+                headers={
+                    'Authorization':'Basic '+base64.b64encode(
+                        bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
+                        ).decode("utf-8"),
+                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,
+                    'content-type':'application/json'
+                }
+            )
+            print(
+                dict(sorted(map(
+                    lambda x: (x['id'],x['name']),companies.json())
+                    ,key=lambda x:x[1]))
+            )
+            return JsonResponse(
+                {'boards':dict(map(
+                lambda x: (x['id'],x['name']),
+                filter(lambda x: not x['inactiveFlag'],boards.json())
+                )),
+                'companies':dict(map(
+                    lambda x: (x['id'],x['name']),companies.json()))
+                }
+            )
+        except:
+            # import sys
+            # print(sys.exc_info())
+            return HttpResponseServerError()
+    # print(form.errors)
+    return HttpResponseBadRequest()
+
+@login_required
+@require_POST
+@csrf_exempt
+def add_connectwisemanage_boardstatus(request, code):
+    form = forms.AddConnectWiseManageFormComplete(request.POST)
+    print(request.POST)
+    if form.is_valid():
+        try:
+            print(form.cleaned_data)
+            statuses = requests.get(f"{form.cleaned_data['url']}/v4_6_release/apis/3.0/service/boards/{form.cleaned_data['board']}/statuses",
+                headers={
+                    'Authorization':'Basic '+base64.b64encode(
+                        bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
+                        ).decode("utf-8"),
+                    'clientId':'f621b9db-0621-405b-b4f6-b6e3ccfa07a0',
+                    'content-type':'application/json'
+                }
+            )
+            statuses.raise_for_status()
+            return JsonResponse(
+                dict(sorted(dict(map(
+                lambda x: (x['id'],x['name']),
+                filter(lambda x: not x['inactive'],statuses.json())
+                )).items(),key=lambda a:a[1]))
+            )
+        except:
+            import sys
+            print(sys.exc_info())
+            return HttpResponseServerError()
+    print(form.errors)
+    return HttpResponseBadRequest()# Forks: add custom views after this line

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load compress humanize static hc_extras %}
+
+{% block title %}Connectwise Manage Integration for {{ site_name }}{% endblock %}
+
+
+{% block content %}
+<div class="row">
+<div class="col-sm-12">
+    <h1>Connectwise Manage</h1>
+
+    <p><a href="https://www.connectwise.com/platform/business-management/manage">ConnectWise Manage</a> provides
+    IT Service Management, including ticketing.
+    You can integrate it with your {{ site_name }} account in a few simple steps.</p>
+
+    <h2>Setup Guide</h2>
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>
+                Log into your ConnectWise Manage account as an administrator and go to the
+                <strong>System › Members</strong> page.
+            </p>
+        </div>
+        <div class="col-sm-6">
+            <img
+                class="ai-guide-screenshot"
+                alt="Screenshot"
+                src="{% static 'img/integrations/setup_opsgenie_1.png' %}">
+        </div>
+    </div>
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            Select the <strong>API Members</strong> tab at the top of the page.
+        </div>
+        <div class="col-sm-6">
+            <img
+                class="ai-guide-screenshot"
+                alt="Screenshot"
+                src="{% static 'img/integrations/setup_opsgenie_2.png' %}">
+        </div>
+    </div>
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Add a <strong>New Member</strong>
+                permission, make sure it is <strong>checked</strong>.
+            </p>The integration does not need the <strong>Read Access</strong> and
+                <strong>Delete Access</strong> checkboxes – make sure they are
+                <strong>unchecked</strong>.
+            </p>
+            <p>Give the integration a descriptive name,
+                take note of its <strong>API Key</strong>, then save the integration.
+            </p>
+        </div>
+        <div class="col-sm-6">
+            <img
+                class="ai-guide-screenshot"
+                alt="Screenshot"
+                src="{% static 'img/integrations/setup_opsgenie_3.png' %}">
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Paste the API Key down below, and make sure the correct
+                <strong>service region</strong> is selected.
+                Save the integration, and you are done!
+            </p>
+        </div>
+    </div>
+
+    <h2>Integration Settings</h2>
+
+    <form method="post" class="form-horizontal" id="connectwisemanage-integration">
+        {% csrf_token %}
+        <div class="form-group {{ form.url.css_classes }}">
+            <label for="manage-url" class="col-sm-2 control-label">Base URL</label>
+            <div class="col-sm-4">
+                <input
+                    id="manage-url"
+                    type="text"
+                    class="form-control"
+                    name="url"
+                    placeholder=""
+                    value="{{ form.url.value|default:"" }}">
+
+                {% if form.url.errors %}
+                <div class="help-block">
+                    {{ form.url.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.company.css_classes }}">
+            <label for="manage-company" class="col-sm-2 control-label">Company Name</label>
+            <div class="col-sm-4">
+                <input
+                    id="manage-company"
+                    type="text"
+                    class="form-control"
+                    name="company"
+                    placeholder=""
+                    value="{{ form.company.value|default:"" }}">
+
+                {% if form.company.errors %}
+                <div class="help-block">
+                    {{ form.company.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.public_key.css_classes }}">
+            <label for="manage-public_key" class="col-sm-2 control-label">Public Key</label>
+            <div class="col-sm-4">
+                <input
+                    id="manage-public_key"
+                    type="text"
+                    class="form-control"
+                    name="public_key"
+                    placeholder=""
+                    value="{{ form.public_key.value|default:"" }}">
+
+                {% if form.public_key.errors %}
+                <div class="help-block">
+                    {{ form.public_key.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.private_key.css_classes }}">
+            <label for="manage-private_key" class="col-sm-2 control-label">Private Key</label>
+            <div class="col-sm-4">
+                <input
+                    id="manage-private_key"
+                    type="text"
+                    class="form-control"
+                    name="private_key"
+                    placeholder=""
+                    value="{{ form.private_key.value|default:"" }}">
+
+                {% if form.private_key.errors %}
+                <div class="help-block">
+                    {{ form.private_key.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.board.css_classes }}">
+            <label for="manage-board" class="col-sm-2 control-label">Board</label>
+            <div class="col-sm-4">
+                <select
+                    id="manage-board"
+                    type="text"
+                    class="form-control"
+                    name="board"
+                    disabled >
+                <option value="">---</option>
+                </select>
+
+                {% if form.board.errors %}
+                <div class="help-block">
+                    {{ form.board.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.status_down.css_classes }}">
+            <label for="manage-status_down" class="col-sm-2 control-label">Status - Down Event</label>
+            <div class="col-sm-4">
+                <select
+                    id="manage-status_down"
+                    type="text"
+                    class="form-control"
+                    name="status_down"
+                    disabled >
+                <option value="">---</option>
+                </select>
+
+                {% if form.status_down.errors %}
+                <div class="help-block">
+                    {{ form.status_down.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.status_up.css_classes }}">
+            <label for="manage-status_up" class="col-sm-2 control-label">Status - Up Event</label>
+            <div class="col-sm-4">
+                <select
+                    id="manage-status_up"
+                    type="text"
+                    class="form-control"
+                    name="status_up"
+                    disabled >
+                <option value="">---</option>
+                </select>
+
+                {% if form.status_up.errors %}
+                <div class="help-block">
+                    {{ form.status_up.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="form-group {{ form.ticket_company.css_classes }}">
+            <label for="manage-ticket_company" class="col-sm-2 control-label">Company for Tickets</label>
+            <div class="col-sm-4">
+                <select
+                    id="manage-ticket_company"
+                    type="text"
+                    class="form-control"
+                    name="ticket_company"
+                    disabled >
+                <option value="">---</option>
+                </select>
+
+                {% if form.ticket_company.errors %}
+                <div class="help-block">
+                    {{ form.ticket_company.errors|join:"" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <button type="submit" class="btn btn-primary">Save Integration</button>
+            </div>
+        </div>
+    </form>
+</div>
+</div>
+{% compress js %}
+<script src="{% static 'js/add_connectwisemanage.js' %}"></script>
+{% endcompress %}
+{% endblock %}

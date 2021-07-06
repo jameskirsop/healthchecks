@@ -54,6 +54,7 @@ CHANNEL_KINDS = (
     ("call", "Phone Call"),
     ("linenotify", "LINE Notify"),
     ("signal", "Signal"),
+    ("connectwisemanage", "ConnectWise Manage"),
 )
 
 PO_PRIORITIES = {-2: "lowest", -1: "low", 0: "normal", 1: "high", 2: "emergency"}
@@ -484,6 +485,8 @@ class Channel(models.Model):
             return transports.LineNotify(self)
         elif self.kind == "signal":
             return transports.Signal(self)
+        elif self.kind == "connectwisemanage":
+            return transports.ConnectWiseManage(self)
         else:
             raise NotImplementedError("Unknown channel kind: %s" % self.kind)
 
@@ -603,6 +606,38 @@ class Channel(models.Model):
 
         doc = json.loads(self.value)
         return doc["incoming_webhook"]["url"]
+
+    @property
+    def connectwisemanage_url(self):
+        return json.loads(self.value)['url']
+
+    @property
+    def connectwisemanage_company(self):
+        return json.loads(self.value)['company']
+    
+    @property
+    def connectwisemanage_ticket_company(self):
+        return json.loads(self.value)['ticket_company']
+
+    @property
+    def connectwisemanage_public_key(self):
+        return json.loads(self.value)['public_key']
+
+    @property
+    def connectwisemanage_private_key(self):
+        return json.loads(self.value)['private_key']
+
+    @property
+    def connectwisemanage_board(self):
+        return json.loads(self.value)['board']
+
+    @property
+    def connectwisemanage_status_down(self):
+        return json.loads(self.value)['status_down']
+
+    @property
+    def connectwisemanage_status_up(self):
+        return json.loads(self.value)['status_up']
 
     @property
     def discord_webhook_url(self):
