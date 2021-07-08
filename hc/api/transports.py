@@ -752,12 +752,29 @@ class ConnectWiseManage(HttpTransport):
         except ValueError:
             pass
 
+    def _get_existing_ticket_id(self,check,manage_tickets_baseURL,headers):
+        r = requests.get(
+            f"{manage_tickets_baseURL}?customFieldConditions=value=\"{str(check.code)}\"&orderBy=_info/dateEntered DESC",
+            headers=headers,
+            timeout=10,
+        )
+        if r.status_code != 200:
+            raise requests.exceptions.HTTPError
+
+        blob = r.json()
+        if len(blob) == 0:
+            return "No existing Manage ticket found to update. Did you forget to setup a custom field?"
+        
+        return blob[0]['id']
+
     def notify(self,check):
         if not settings.CONNECTWISEMANAGE_ENABLED:
             return "ConnectWise Manage ticketing is not enabled"
 
         if not settings.CONNECTWISEMANAGE_CLIENTID:
             return "ConnectWise Manage Developer ClientID is not set"
+
+        manage_tickets_baseURL = f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets"
         
         headers={
             'Authorization':'Basic '+base64.b64encode(
@@ -768,38 +785,35 @@ class ConnectWiseManage(HttpTransport):
         }
 
         if check.status == "up":
-            r = requests.get(
-                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets?customFieldConditions=value=\"{str(check.code)}\"&orderBy=_info/dateEntered DESC",
-                headers=headers
-            )
-            if r.status_code != 200:
-                return "Received status code %d" % r.status_code
+            try:
+                existing_ticket_id = self._get_existing_ticket_id(check,manage_tickets_baseURL,headers)
+            except requests.exceptions.HTTPError:
+                return "Received a bad HTTP status code from ConnectWise on existing ticket lookup"
+            # except:
+            #     return "No existing Manage ticket found to update. Did you forget to setup a custom field?"
 
-            blob = r.json()
-            if len(blob) == 0:
-                return "No existing Manage ticket found to update. Did you forget to setup a custom field?"
-            
-            ticket = blob[0]
             requests.patch(
-                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets/{ticket['id']}",
+                f"{manage_tickets_baseURL}/{existing_ticket_id}",
                 json = [{
                     "op":"replace",
                     "path":"status/id",
                     "value":self.channel.connectwisemanage_status_up,
                 }],
                 headers = headers,
+                timeout=10,
                 )
             requests.post(
-                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets/{ticket['id']}/notes",
+                f"{manage_tickets_baseURL}/{existing_ticket_id}/notes",
                 json = {
                     'text':tmpl("connectwisemanage_note.html", check=check),
                     'resolutionFlag':True,
                 },
                 headers = headers,
+                timeout=10,
             )
             return
 
-        url = f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets"
+        url = f"{manage_tickets_baseURL}"
         payload = {
             'board':{'id':self.channel.connectwisemanage_board},
             'company':{'id':self.channel.connectwisemanage_ticket_company},

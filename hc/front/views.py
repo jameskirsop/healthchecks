@@ -2107,7 +2107,7 @@ def add_connectwisemanage_boardstatus(request, code):
                     'Authorization':'Basic '+base64.b64encode(
                         bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
                         ).decode("utf-8"),
-                    'clientId':'f621b9db-0621-405b-b4f6-b6e3ccfa07a0',
+                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,
                     'content-type':'application/json'
                 }
             )
