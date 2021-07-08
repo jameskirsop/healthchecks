@@ -640,6 +640,10 @@ class Channel(models.Model):
         return json.loads(self.value)['status_up']
 
     @property
+    def connectwisemanage_customFieldId(self):
+        return json.loads(self.value)['customFieldId']
+
+    @property
     def discord_webhook_url(self):
         assert self.kind == "discord"
         doc = json.loads(self.value)

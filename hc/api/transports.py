@@ -768,13 +768,43 @@ class ConnectWiseManage(HttpTransport):
         }
 
         if check.status == "up":
-            return self.patch()
-        
+            r = requests.get(
+                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets?customFieldConditions=value=\"{str(check.code)}\"&orderBy=_info/dateEntered DESC",
+                headers=headers
+            )
+            if r.status_code != 200:
+                return "Received status code %d" % r.status_code
+
+            blob = r.json()
+            if len(blob) == 0:
+                return "No existing Manage ticket found to update. Did you forget to setup a custom field?"
+            
+            ticket = blob[0]
+            requests.patch(
+                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets/{ticket['id']}",
+                json = [{
+                    "op":"replace",
+                    "path":"status/id",
+                    "value":self.channel.connectwisemanage_status_up,
+                }],
+                headers = headers,
+                )
+            requests.post(
+                f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets/{ticket['id']}/notes",
+                json = {
+                    'text':tmpl("connectwisemanage_note.html", check=check),
+                    'resolutionFlag':True,
+                },
+                headers = headers,
+            )
+            return
+
         url = f"{self.channel.connectwisemanage_url}/v4_6_release/apis/3.0/service/tickets"
         payload = {
             'board':{'id':self.channel.connectwisemanage_board},
             'company':{'id':self.channel.connectwisemanage_ticket_company},
             'status':{'id':self.channel.connectwisemanage_status_down},
+            'customFields':[{'id':self.channel.connectwisemanage_customFieldId,'value':str(check.code)}],
             'summary':tmpl("connectwisemanage_summary.html", check=check),
             'initialDescription':tmpl("connectwisemanage_description.html", check=check),
             }

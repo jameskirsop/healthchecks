@@ -44,15 +44,8 @@
     <div class="row ai-step">
         <div class="col-sm-6">
             <span class="step-no"></span>
-            <p>Add a <strong>New Member</strong>
-                permission, make sure it is <strong>checked</strong>.
-            </p>The integration does not need the <strong>Read Access</strong> and
-                <strong>Delete Access</strong> checkboxes – make sure they are
-                <strong>unchecked</strong>.
-            </p>
-            <p>Give the integration a descriptive name,
-                take note of its <strong>API Key</strong>, then save the integration.
-            </p>
+            <p>Add a <strong>New Member</strong> and fill out the details as required.</p>
+            <p>Make sure to give the Member a descriptive name.</p>
         </div>
         <div class="col-sm-6">
             <img
@@ -65,15 +58,77 @@
     <div class="row ai-step">
         <div class="col-sm-6">
             <span class="step-no"></span>
-            <p>Paste the API Key down below, and make sure the correct
-                <strong>service region</strong> is selected.
-                Save the integration, and you are done!
+            <p>Save the new Member and then click on its record in the Members list</p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Browse to the API Keys tab, and create a new API Key</p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Copy and Paste the <strong>Public and Private Keys</strong> into the Integration settings below.</p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>A custom field for storing the identifier for the check within the ticket is required.<br />
+                Browse to <strong>Setup Tables</strong> and search for the <strong>Custom Fields</strong> setup table.
+            </p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Select the <strong>Ticket</strong> pod.</p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Click on the <strong>add icon</strong> next to Custom Fields</p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Enter <code>HealthchecksUUID</code> as the <strong>Field Caption</strong><br />
+            Set the <strong>Field Type</strong> to <code>Text</code><br />
+            Disable the <strong>Display on screen?</strong> option.
+            </p>
+        </div>
+    </div>
+
+    <div class="row ai-step">
+        <div class="col-sm-6">
+            <span class="step-no"></span>
+            <p>Save the Custom Field using the <strong>Save button</strong>.
             </p>
         </div>
     </div>
 
     <h2>Integration Settings</h2>
-
+    {% if form.non_field_errors %}
+    <div class="row">
+        <div class="col-sm-12">
+            {% for error in form.non_field_errors %}
+                <p class="bg-danger connectwisemanage_add_dialog">
+                    <strong>{{ error }}</strong>
+                </p>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
     <form method="post" class="form-horizontal" id="connectwisemanage-integration">
         {% csrf_token %}
         <div class="form-group {{ form.url.css_classes }}">
@@ -84,7 +139,8 @@
                     type="text"
                     class="form-control"
                     name="url"
-                    placeholder=""
+                    placeholder="https://myconnectwiseinstance.sampledomain.com"
+                    required
                     value="{{ form.url.value|default:"" }}">
 
                 {% if form.url.errors %}
@@ -102,7 +158,8 @@
                     type="text"
                     class="form-control"
                     name="company"
-                    placeholder=""
+                    placeholder="My Company ID"
+                    required
                     value="{{ form.company.value|default:"" }}">
 
                 {% if form.company.errors %}
@@ -121,6 +178,7 @@
                     class="form-control"
                     name="public_key"
                     placeholder=""
+                    required
                     value="{{ form.public_key.value|default:"" }}">
 
                 {% if form.public_key.errors %}
@@ -139,6 +197,7 @@
                     class="form-control"
                     name="private_key"
                     placeholder=""
+                    required
                     value="{{ form.private_key.value|default:"" }}">
 
                 {% if form.private_key.errors %}
@@ -146,6 +205,24 @@
                     {{ form.private_key.errors|join:"" }}
                 </div>
                 {% endif %}
+            </div>
+        </div>
+        <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-4">
+                    <button type="button" class="btn btn-info" id="connectwisemanage_getDetailsButton">Get Details from ConnectWise</button>
+                </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-4">
+                <div id="connectwisemanage_loadingnotification" class="bg-info hidden">
+                    <div class="spinner started">
+                        <div class="d1"></div>
+                        <div class="d2"></div>
+                        <div class="d3"></div>
+                    </div>
+                    Contacting ConnectWise
+                </div>
             </div>
         </div>
         <div class="form-group {{ form.board.css_classes }}">

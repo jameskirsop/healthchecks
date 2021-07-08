@@ -2030,11 +2030,25 @@ def add_connectwisemanage(request, code):
         form = forms.AddConnectWiseManageFormComplete(request.POST)
         if form.is_valid():
             channel = Channel(project=project, kind="connectwisemanage")
+            ## Lookup HealthchecksUUID
+            print(channel.value)
+            customField = requests.get(f"{form.cleaned_data['url']}/v4_6_release/apis/3.0/system/userDefinedFields?conditions=caption='HealthchecksUUID'",
+                headers={
+                    'Authorization':'Basic '+base64.b64encode(
+                        bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
+                        ).decode("utf-8"),
+                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,'content-type':'application/json'
+                }
+            )
+            customField.raise_for_status()
+            if len(customField.json()) != 1:
+                form.add_error(None,'No (or more than one) HealthchecksUUID Custom Field found in the specified ConnectWise company.')
+                ctx = {"page": "channels", "project": project, "form": form}
+                return render(request, "integrations/add_connectwisemanage.html", ctx)
+            form.cleaned_data['customFieldId'] = customField.json()[0]['id']
             channel.value = json.dumps(form.cleaned_data)
-            # print(channel.value)
             channel.save()
-
-            # channel.assign_all_checks()
+            channel.assign_all_checks()
             return redirect("hc-channels", project.code)
     else:
         form = forms.AddConnectWiseManageFormComplete()
@@ -2055,8 +2069,7 @@ def add_connectwisemanage_board(request, code):
                     'Authorization':'Basic '+base64.b64encode(
                         bytes(f"{form.cleaned_data['company']}+{form.cleaned_data['public_key']}:{form.cleaned_data['private_key']}",encoding="utf-8")
                         ).decode("utf-8"),
-                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,
-                    'content-type':'application/json'
+                    'clientId':settings.CONNECTWISEMANAGE_CLIENTID,'content-type':'application/json'
                 }
             )
             boards.raise_for_status()
@@ -2069,11 +2082,6 @@ def add_connectwisemanage_board(request, code):
                     'content-type':'application/json'
                 }
             )
-            print(
-                dict(sorted(map(
-                    lambda x: (x['id'],x['name']),companies.json())
-                    ,key=lambda x:x[1]))
-            )
             return JsonResponse(
                 {'boards':dict(map(
                 lambda x: (x['id'],x['name']),
@@ -2084,10 +2092,7 @@ def add_connectwisemanage_board(request, code):
                 }
             )
         except:
-            # import sys
-            # print(sys.exc_info())
             return HttpResponseServerError()
-    # print(form.errors)
     return HttpResponseBadRequest()
 
 @login_required
@@ -2095,10 +2100,8 @@ def add_connectwisemanage_board(request, code):
 @csrf_exempt
 def add_connectwisemanage_boardstatus(request, code):
     form = forms.AddConnectWiseManageFormComplete(request.POST)
-    print(request.POST)
     if form.is_valid():
         try:
-            print(form.cleaned_data)
             statuses = requests.get(f"{form.cleaned_data['url']}/v4_6_release/apis/3.0/service/boards/{form.cleaned_data['board']}/statuses",
                 headers={
                     'Authorization':'Basic '+base64.b64encode(
@@ -2116,8 +2119,11 @@ def add_connectwisemanage_boardstatus(request, code):
                 )).items(),key=lambda a:a[1]))
             )
         except:
-            import sys
-            print(sys.exc_info())
+            # import sys
+            # print(sys.exc_info())
             return HttpResponseServerError()
-    print(form.errors)
-    return HttpResponseBadRequest()# Forks: add custom views after this line
+    if form.has_error('board','required'):
+        return JsonResponse({})
+    return HttpResponseBadRequest()
+    
+# Forks: add custom views after this line

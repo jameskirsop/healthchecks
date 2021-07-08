@@ -1,0 +1,3 @@
+{% load hc_extras humanize %}
+The check "{{ check.name_then_code }}" has gone {{ check.status }}.
+Last ping was {{ check.last_ping|naturaltime }}.

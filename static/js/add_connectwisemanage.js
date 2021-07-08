@@ -1,8 +1,12 @@
 boardSelect = document.getElementById('manage-board');
 companySelect = document.getElementById('manage-ticket_company');
 
-document.getElementById('manage-private_key').oninput = (ev) => {
-    if (ev.target.value.length > 15 ){
+document.getElementById('connectwisemanage_getDetailsButton').addEventListener('click',(e) => {
+    const hasAppropriateKeyLength = (el) => el.value.length > 15; 
+    console.log([document.getElementById('manage-private_key'),document.getElementById('manage-public_key')].every(hasAppropriateKeyLength));
+    if ([document.getElementById('manage-private_key'),document.getElementById('manage-public_key')].every(hasAppropriateKeyLength)){
+        console.log('hello');
+        document.getElementById('connectwisemanage_loadingnotification').classList.toggle('hidden')
         let boardsRequest = new Request(`boards`);
         var integrationFormData = new FormData(document.getElementById('connectwisemanage-integration'));
         fetch(boardsRequest, {
@@ -31,9 +35,13 @@ document.getElementById('manage-private_key').oninput = (ev) => {
             }
         }).catch(e => {
             console.log(e);
+        }).finally(e => {
+            document.getElementById('connectwisemanage_loadingnotification').classList.toggle('hidden');
         });
+    } else {
+
     }
-};
+});
 
 boardSelect.addEventListener('input', ev => {
     let statusesRequest = new Request(`boardsstatus`);
@@ -51,13 +59,18 @@ boardSelect.addEventListener('input', ev => {
             for (i=length-1;i >= 1; i--){
                 el.remove(i);
             }
-            for (b in data){
-                var opt = document.createElement("option");
-                opt.value = b;
-                opt.text = data[b]
-                el.add(opt,null)
+            console.log(Object.keys(data).length);
+            if (Object.keys(data).length > 0) {
+                for (b in data) {
+                    var opt = document.createElement("option");
+                    opt.value = b;
+                    opt.text = data[b]
+                    el.add(opt,null)
+                }
+                el.disabled = false;
+            } else {
+                el.disabled = true;
             }
-            el.disabled = false;
         });
     })
     .catch(e => {
